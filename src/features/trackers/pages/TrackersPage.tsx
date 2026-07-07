@@ -3,6 +3,7 @@ import {
   QrCode, CheckCircle2, Search, Loader2, Trash2, Link, 
   RefreshCw, Clock, Wifi, WifiOff, History, X, AlertCircle, Sparkles
 } from "lucide-react";
+import { useAuth } from "../../auth/hooks/useAuth";
 import { ChildService } from "../../children/services/childService";
 import { DaycareService } from "../../daycares/services/daycareService";
 import { useDaycare } from "../../daycares/hooks/useDaycare";
@@ -18,6 +19,7 @@ interface ChildWithTracker extends ChildResponse {
 }
 
 export default function TrackersPage() {
+  const { user } = useAuth();
   const [childrenWithTrackers, setChildrenWithTrackers] = useState<ChildWithTracker[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -303,17 +305,24 @@ export default function TrackersPage() {
     }
   };
 
-  const filteredChildren = childrenWithTrackers.filter((child) => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch =
-      child.full_name.toLowerCase().includes(query) ||
-      child.code.toLowerCase().includes(query) ||
-      (child.tracker?.device_code && child.tracker.device_code.toLowerCase().includes(query));
-      
-    const matchesDaycare = daycareFilter === "" || child.daycare_id === daycareFilter;
+  const filteredChildren = childrenWithTrackers
+    .filter((c) => {
+      if (user?.role === "DAYCARE_MANAGER" || user?.role === "OPERATOR") {
+        return c.daycare_id === user.daycare_id;
+      }
+      return true;
+    })
+    .filter((child) => {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        child.full_name.toLowerCase().includes(query) ||
+        child.code.toLowerCase().includes(query) ||
+        (child.tracker?.device_code && child.tracker.device_code.toLowerCase().includes(query));
+        
+      const matchesDaycare = daycareFilter === "" || child.daycare_id === daycareFilter;
 
-    return matchesSearch && matchesDaycare;
-  });
+      return matchesSearch && matchesDaycare;
+    });
 
   // Summary Metrics
   const totalChildrenCount = childrenWithTrackers.length;
@@ -406,20 +415,22 @@ export default function TrackersPage() {
           />
         </div>
 
-        <div className="w-full sm:w-64">
-          <select
-            value={daycareFilter}
-            onChange={(e) => setDaycareFilter(e.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 focus:border-cyan-500 focus:bg-white focus:outline-none transition-all"
-          >
-            <option value="">Todas las guarderías</option>
-            {daycares.map((daycare) => (
-              <option key={daycare.id} value={daycare.id}>
-                {daycare.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {user?.role === "ADMIN" && (
+          <div className="w-full sm:w-64">
+            <select
+              value={daycareFilter}
+              onChange={(e) => setDaycareFilter(e.target.value)}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 focus:border-cyan-500 focus:bg-white focus:outline-none transition-all"
+            >
+              <option value="">Todas las guarderías</option>
+              {daycares.map((daycare) => (
+                <option key={daycare.id} value={daycare.id}>
+                  {daycare.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Data Table */}
@@ -498,13 +509,17 @@ export default function TrackersPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {child.tracker && child.tracker.is_active ? (
-                          <button
-                            onClick={() => handleDecoupleTracker(child)}
-                            title="Desvincular rastreador"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all cursor-pointer"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          (user?.role === "ADMIN" || user?.role === "DAYCARE_MANAGER") ? (
+                            <button
+                              onClick={() => handleDecoupleTracker(child)}
+                              title="Desvincular rastreador"
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all cursor-pointer"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-400 font-bold bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200">Vinculado</span>
+                          )
                         ) : (
                           <button
                             onClick={() => handleOpenPairing(child)}

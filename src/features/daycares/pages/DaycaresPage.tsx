@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { DaycareRegisterResponse } from "../interfaces/Daycare.interface";
 import { DaycareService } from "../services/daycareService";
 import { useDaycare } from "../hooks/useDaycare";
+import { useAuth } from "../../auth/hooks/useAuth";
 import DaycareFormModal from "../components/DaycareFormModal";
 
 const actions = [
@@ -13,6 +14,7 @@ const actions = [
 ];
 
 export default function DaycaresPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -47,14 +49,21 @@ export default function DaycaresPage() {
     }
   };
 
-  const filteredDaycares = daycares.filter((daycare) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      daycare.name.toLowerCase().includes(query) ||
-      daycare.code.toLowerCase().includes(query) ||
-      (daycare.address && daycare.address.toLowerCase().includes(query))
-    );
-  });
+  const filteredDaycares = daycares
+    .filter((d) => {
+      if (user?.role === "DAYCARE_MANAGER") {
+        return d.id === user.daycare_id;
+      }
+      return true;
+    })
+    .filter((daycare) => {
+      const query = searchQuery.toLowerCase();
+      return (
+        daycare.name.toLowerCase().includes(query) ||
+        daycare.code.toLowerCase().includes(query) ||
+        (daycare.address && daycare.address.toLowerCase().includes(query))
+      );
+    });
 
   if (loading) {
     return (
@@ -85,17 +94,19 @@ export default function DaycaresPage() {
             </div>
           </div>
 
-          <button 
-            onClick={() => {
-              setModalMode("create");
-              setSelectedDaycare(null);
-              setIsModalOpen(true);
-            }}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white hover:bg-slate-800 transition-all cursor-pointer"
-          >
-            <Plus size={18} />
-            Nueva guardería
-          </button>
+          {user?.role === "ADMIN" && (
+            <button 
+              onClick={() => {
+                setModalMode("create");
+                setSelectedDaycare(null);
+                setIsModalOpen(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white hover:bg-slate-800 transition-all cursor-pointer"
+            >
+              <Plus size={18} />
+              Nueva guardería
+            </button>
+          )}
         </div>
       </section>
 
@@ -192,18 +203,20 @@ export default function DaycaresPage() {
                       )}
                     </td>
                     <td className="py-4 pr-4">
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => {
-                            setModalMode("edit");
-                            setSelectedDaycare(daycare);
-                            setIsModalOpen(true);
-                          }}
-                          className="rounded-xl bg-cyan-600 px-3.5 py-2 text-xs font-black text-white hover:bg-cyan-700 shadow-sm shadow-cyan-600/10 hover:shadow-md transition-all cursor-pointer"
-                        >
-                          Editar
-                        </button>
-                      </div>
+                      {(user?.role === "ADMIN" || (user?.role === "DAYCARE_MANAGER" && user.daycare_id === daycare.id)) && (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => {
+                              setModalMode("edit");
+                              setSelectedDaycare(daycare);
+                              setIsModalOpen(true);
+                            }}
+                            className="rounded-xl bg-cyan-600 px-3.5 py-2 text-xs font-black text-white hover:bg-cyan-700 shadow-sm shadow-cyan-600/10 hover:shadow-md transition-all cursor-pointer"
+                          >
+                            Editar
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -3,6 +3,7 @@ import { UsersRound, CheckCircle2, Plus, Search, Loader2, KeyRound, UserPlus, Bu
 import { GuardianService } from "../services/guardianService";
 import { DaycareService } from "../../daycares/services/daycareService";
 import { useDaycare } from "../../daycares/hooks/useDaycare";
+import { useAuth } from "../../auth/hooks/useAuth";
 import type { GuardianAdminResponse, GuardianCreateResponse } from "../interfaces/Guardian.interface";
 import GuardianFormModal from "../components/GuardianFormModal";
 import GuardianCredentialsModal from "../components/GuardianCredentialsModal";
@@ -17,6 +18,7 @@ const actions = [
 ];
 
 export default function GuardiansPage() {
+  const { user } = useAuth();
   const [guardians, setGuardians] = useState<GuardianAdminResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -110,14 +112,22 @@ export default function GuardiansPage() {
     fetchGuardians();
   };
 
-  const filteredGuardians = guardians.filter((g) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      g.full_name.toLowerCase().includes(query) ||
-      g.code.toLowerCase().includes(query) ||
-      (g.email && g.email.toLowerCase().includes(query))
-    );
-  });
+  const filteredGuardians = guardians
+    .filter((g) => {
+      if (user?.role === "DAYCARE_MANAGER" || user?.role === "OPERATOR") {
+        const myDaycareCode = daycares.find(d => d.id === user.daycare_id)?.code;
+        return g.daycares.some(d => d.daycare_code === myDaycareCode);
+      }
+      return true;
+    })
+    .filter((g) => {
+      const query = searchQuery.toLowerCase();
+      return (
+        g.full_name.toLowerCase().includes(query) ||
+        g.code.toLowerCase().includes(query) ||
+        (g.email && g.email.toLowerCase().includes(query))
+      );
+    });
 
   if (loading && guardians.length === 0) {
     return (
@@ -336,7 +346,11 @@ export default function GuardiansPage() {
           }}
           guardianCode={selectedGuardian.code}
           guardianName={selectedGuardian.full_name}
-          daycares={daycares}
+          daycares={
+            user?.role === "ADMIN"
+              ? daycares
+              : daycares.filter(d => d.id === user?.daycare_id)
+          }
           onSubmit={handleLinkChildSubmit}
         />
       )}
@@ -351,7 +365,11 @@ export default function GuardiansPage() {
           }}
           guardianCode={selectedGuardian.code}
           guardianName={selectedGuardian.full_name}
-          daycares={daycares}
+          daycares={
+            user?.role === "ADMIN"
+              ? daycares
+              : daycares.filter(d => d.id === user?.daycare_id)
+          }
           onSubmit={handleLinkDaycareSubmit}
         />
       )}

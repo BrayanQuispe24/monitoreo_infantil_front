@@ -87,7 +87,7 @@ const createChildMarkerIcon = (name: string, status: string) => {
 };
 
 export default function MonitoringPage() {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const [monitoredChildren, setMonitoredChildren] = useState<MonitoredChild[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -193,7 +193,11 @@ export default function MonitoringPage() {
         const daycaresData = await DaycareService.listarGuarderias();
         changeDaycares(daycaresData);
         if (daycaresData.length > 0) {
-          setSelectedDaycareId(daycaresData[0].id);
+          if (user?.role !== "ADMIN" && user?.daycare_id) {
+            setSelectedDaycareId(user.daycare_id);
+          } else {
+            setSelectedDaycareId(daycaresData[0].id);
+          }
         } else {
           setLoading(false);
         }
@@ -203,7 +207,7 @@ export default function MonitoringPage() {
       }
     };
     init();
-  }, []);
+  }, [user]);
 
   // Poll locations every 10 seconds for the selected daycare
   useEffect(() => {
@@ -411,14 +415,22 @@ export default function MonitoringPage() {
             {/* Daycare Selector */}
             <select
               value={selectedDaycareId}
+              disabled={user?.role !== "ADMIN"}
               onChange={(e) => setSelectedDaycareId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 focus:border-cyan-500 focus:outline-none transition-all"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 focus:border-cyan-500 focus:outline-none transition-all disabled:opacity-75 disabled:cursor-not-allowed"
             >
-              {daycares.map((daycare) => (
-                <option key={daycare.id} value={daycare.id}>
-                  {daycare.name}
-                </option>
-              ))}
+              {daycares
+                .filter(d => {
+                  if (user?.role !== "ADMIN" && user?.daycare_id) {
+                    return d.id === user.daycare_id;
+                  }
+                  return true;
+                })
+                .map((daycare) => (
+                  <option key={daycare.id} value={daycare.id}>
+                    {daycare.name}
+                  </option>
+                ))}
             </select>
 
             <button

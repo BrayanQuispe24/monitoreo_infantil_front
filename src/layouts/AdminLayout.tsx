@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
   AlertTriangle,
@@ -19,8 +19,10 @@ import {
   UserRoundCheck,
   UsersRound,
   X,
+  Loader2
 } from "lucide-react";
-import { NavLink, Outlet, useLocation } from "react-router";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { useAuth } from "../features/auth/hooks/useAuth";
 
 export type UserRole = "ADMIN" | "DAYCARE_MANAGER" | "OPERATOR" | "MONITOR";
 
@@ -32,12 +34,6 @@ type MenuItem = {
   badge?: string;
 };
 
-const currentUser = {
-  name: "Administrador SIG",
-  email: "admin@guarderia.com",
-  role: "ADMIN" as UserRole,
-  daycare: "Sistema General",
-};
 
 const menuItems: MenuItem[] = [
   {
@@ -127,15 +123,66 @@ function getPageTitle(pathname: string) {
 }
 
 export default function AdminLayout() {
+  const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // If not logged in, redirect to login page
+  useEffect(() => {
+    if (!user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  const userRole = (user?.role || "MONITOR") as UserRole;
 
   const visibleMenuItems = useMemo(() => {
-    return menuItems.filter((item) => item.roles.includes(currentUser.role));
-  }, []);
+    return menuItems.filter((item) => item.roles.includes(userRole));
+  }, [userRole]);
+
+  const isPathAllowed = useMemo(() => {
+    if (location.pathname === "/admin" || location.pathname === "/admin/dashboard") {
+      return true;
+    }
+    const menuItem = menuItems.find(item => location.pathname.startsWith(item.path));
+    if (!menuItem) return true; // fallback for non-menu subroutes
+    return menuItem.roles.includes(userRole);
+  }, [location.pathname, userRole]);
 
   const pageTitle = getPageTitle(location.pathname);
+
+  if (!user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-900">
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+      </div>
+    );
+  }
+
+  if (!isPathAllowed) {
+    return (
+      <main className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-sm space-y-4">
+          <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-rose-50 text-rose-500 border border-rose-100">
+            <AlertTriangle size={32} />
+          </div>
+          <h2 className="text-xl font-black text-slate-900">Acceso no autorizado</h2>
+          <p className="text-xs font-semibold text-slate-500 leading-relaxed">
+            Tu rol como <strong className="text-slate-800">{getRoleLabel(userRole)}</strong> no cuenta con los permisos necesarios para acceder a esta sección.
+          </p>
+          <button
+            onClick={() => navigate("/admin/dashboard")}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-xs font-black text-white hover:bg-slate-800 transition-all active:scale-95 cursor-pointer"
+          >
+            Ir al Dashboard
+          </button>
+        </div>
+      </main>
+    );
+  }
+
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
@@ -194,10 +241,10 @@ export default function AdminLayout() {
               {!collapsed && (
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold">
-                    {currentUser.name}
+                    {user.username}
                   </p>
                   <p className="truncate text-xs text-slate-400">
-                    {getRoleLabel(currentUser.role)}
+                    {getRoleLabel(userRole)}
                   </p>
                 </div>
               )}
@@ -206,7 +253,7 @@ export default function AdminLayout() {
             {!collapsed && (
               <div className="mt-3 rounded-xl bg-slate-900/80 px-3 py-2">
                 <p className="truncate text-xs text-slate-400">
-                  {currentUser.daycare}
+                  {user.daycare_id ? `ID Guardería: ${user.daycare_id.slice(0, 8)}...` : "Sistema General"}
                 </p>
               </div>
             )}
@@ -246,6 +293,7 @@ export default function AdminLayout() {
         <div className="border-t border-white/10 p-4">
           <button
             type="button"
+            onClick={logout}
             className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-slate-300 transition hover:bg-rose-500/10 hover:text-rose-100 ${collapsed ? "lg:justify-center lg:px-3" : ""
               }`}
           >
@@ -308,9 +356,9 @@ export default function AdminLayout() {
                 </div>
 
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-black">{currentUser.name}</p>
+                  <p className="truncate text-sm font-black">{user.username}</p>
                   <p className="truncate text-xs font-medium text-slate-500">
-                    {getRoleLabel(currentUser.role)}
+                    {getRoleLabel(userRole)}
                   </p>
                 </div>
               </div>

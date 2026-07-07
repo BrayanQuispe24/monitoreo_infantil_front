@@ -3,9 +3,11 @@ import { Map, Trash2, Save, RotateCcw, Edit3, Loader2, AlertCircle } from "lucid
 import SigMap from "../components/SigMap";
 import { useDaycare } from "../../daycares/hooks/useDaycare";
 import { DaycareService } from "../../daycares/services/daycareService";
+import { useAuth } from "../../auth/hooks/useAuth";
 import type { LatLng } from "leaflet";
 
 export default function SigAreaPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +35,19 @@ export default function SigAreaPage() {
     };
     fetchDaycares();
   }, []);
+
+  useEffect(() => {
+    if (daycares.length > 0) {
+      if (user?.role === "DAYCARE_MANAGER") {
+        const myDaycare = daycares.find(d => d.id === user.daycare_id);
+        if (myDaycare) {
+          setSelectedCode(myDaycare.code);
+        }
+      } else {
+        setSelectedCode(daycares[0].code);
+      }
+    }
+  }, [daycares, user]);
 
   const selectedDaycare = daycares.find((d) => d.code === selectedCode) || null;
 
@@ -155,6 +170,7 @@ export default function SigAreaPage() {
             </label>
             <select
               value={selectedCode}
+              disabled={user?.role === "DAYCARE_MANAGER"}
               onChange={(e) => {
                 setSelectedCode(e.target.value);
                 setIsDrawing(false);
@@ -162,14 +178,21 @@ export default function SigAreaPage() {
                 setError(null);
                 setSuccessMsg(null);
               }}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all cursor-pointer"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
             >
               <option value="">Selecciona una guardería...</option>
-              {daycares.map((d) => (
-                <option key={d.code} value={d.code}>
-                  [{d.code}] {d.name}
-                </option>
-              ))}
+              {daycares
+                .filter(d => {
+                  if (user?.role === "DAYCARE_MANAGER") {
+                    return d.id === user.daycare_id;
+                  }
+                  return true;
+                })
+                .map((d) => (
+                  <option key={d.code} value={d.code}>
+                    [{d.code}] {d.name}
+                  </option>
+                ))}
             </select>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { UserRoundCheck, CheckCircle2, Plus, Search, Loader2, Baby } from "lucid
 import { ChildService } from "../services/childService";
 import { DaycareService } from "../../daycares/services/daycareService";
 import { useDaycare } from "../../daycares/hooks/useDaycare";
+import { useAuth } from "../../auth/hooks/useAuth";
 import type { ChildResponse } from "../interfaces/Child.interface";
 import ChildFormModal from "../components/ChildFormModal";
 
@@ -14,6 +15,7 @@ const actions = [
 ];
 
 export default function ChildrenPage() {
+  const { user } = useAuth();
   const [childrenList, setChildrenList] = useState<ChildResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,11 +49,15 @@ export default function ChildrenPage() {
   }, []);
 
   const handleFormSubmit = async (data: any) => {
+    const payload = { ...data };
+    if (user?.role !== "ADMIN" && user?.daycare_id) {
+      payload.daycare_id = user.daycare_id;
+    }
     if (modalMode === "create") {
-      const newChild = await ChildService.crearNino(data);
+      const newChild = await ChildService.crearNino(payload);
       setChildrenList([...childrenList, newChild]);
     } else if (modalMode === "edit" && selectedChild) {
-      const updatedChild = await ChildService.actualizarNino(selectedChild.code, data);
+      const updatedChild = await ChildService.actualizarNino(selectedChild.code, payload);
       setChildrenList(childrenList.map((c) => (c.code === selectedChild.code ? updatedChild : c)));
     }
   };
@@ -61,16 +67,23 @@ export default function ChildrenPage() {
     return daycare ? daycare.name : "Sin asignar";
   };
 
-  const filteredChildren = childrenList.filter((child) => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch =
-      child.full_name.toLowerCase().includes(query) ||
-      child.code.toLowerCase().includes(query);
-      
-    const matchesDaycare = daycareFilter === "" || child.daycare_id === daycareFilter;
+  const filteredChildren = childrenList
+    .filter((c) => {
+      if (user?.role === "DAYCARE_MANAGER" || user?.role === "OPERATOR") {
+        return c.daycare_id === user.daycare_id;
+      }
+      return true;
+    })
+    .filter((child) => {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        child.full_name.toLowerCase().includes(query) ||
+        child.code.toLowerCase().includes(query);
+        
+      const matchesDaycare = daycareFilter === "" || child.daycare_id === daycareFilter;
 
-    return matchesSearch && matchesDaycare;
-  });
+      return matchesSearch && matchesDaycare;
+    });
 
   if (loading) {
     return (
@@ -143,18 +156,20 @@ export default function ChildrenPage() {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {/* Filter by Daycare */}
-            <select
-              value={daycareFilter}
-              onChange={(e) => setDaycareFilter(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all cursor-pointer"
-            >
-              <option value="">Todas las guarderías</option>
-              {daycares.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
+            {user?.role === "ADMIN" && (
+              <select
+                value={daycareFilter}
+                onChange={(e) => setDaycareFilter(e.target.value)}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all cursor-pointer"
+              >
+                <option value="">Todas las guarderías</option>
+                {daycares.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            )}
 
             {/* Search Input */}
             <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:w-72">
@@ -246,7 +261,11 @@ export default function ChildrenPage() {
         onClose={() => setIsModalOpen(false)}
         mode={modalMode}
         child={selectedChild}
-        daycares={daycares}
+        daycares={
+          user?.role === "ADMIN"
+            ? daycares
+            : daycares.filter(d => d.id === user?.daycare_id)
+        }
         onSubmit={handleFormSubmit}
       />
     </div>
