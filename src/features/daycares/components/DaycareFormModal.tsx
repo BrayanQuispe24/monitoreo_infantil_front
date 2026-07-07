@@ -1,0 +1,219 @@
+import { useEffect, useState } from "react";
+import { X, AlertCircle, Loader2 } from "lucide-react";
+import type { DaycareRegisterResponse } from "../interfaces/Daycare.interface";
+
+interface DaycareFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  mode: "create" | "edit";
+  daycare: DaycareRegisterResponse | null;
+  onSubmit: (data: { name: string; address: string; status?: string }) => Promise<void>;
+}
+
+export default function DaycareFormModal({
+  isOpen,
+  onClose,
+  mode,
+  daycare,
+  onSubmit,
+}: DaycareFormModalProps) {
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [status, setStatus] = useState("ACTIVE");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Synchronize form with selected daycare when editing
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === "edit" && daycare) {
+        setName(daycare.name);
+        setAddress(daycare.address || "");
+        setStatus(daycare.status || "ACTIVE");
+      } else {
+        setName("");
+        setAddress("");
+        setStatus("ACTIVE");
+      }
+      setError(null);
+    }
+  }, [isOpen, mode, daycare]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError("El nombre de la guardería es requerido.");
+      return;
+    }
+    if (name.trim().length < 2) {
+      setError("El nombre debe tener al menos 2 caracteres.");
+      return;
+    }
+    if (!address.trim()) {
+      setError("La dirección de la guardería es requerida.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      await onSubmit({
+        name: name.trim(),
+        address: address.trim(),
+        ...(mode === "edit" ? { status } : {}),
+      });
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+      setError(
+        err.response?.data?.detail || 
+        "Ocurrió un error al procesar la solicitud. Por favor intenta de nuevo."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity duration-300"
+        onClick={loading ? undefined : onClose}
+      />
+
+      {/* Modal Container */}
+      <div className="relative w-full max-w-lg transform overflow-hidden rounded-[2.5rem] bg-white p-8 shadow-2xl border border-slate-100 transition-all scale-100 duration-300 z-10">
+        
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          disabled={loading}
+          className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50 transition-all cursor-pointer"
+        >
+          <X size={18} />
+        </button>
+
+        {/* Title */}
+        <div className="mb-6">
+          <span className="inline-block rounded-2xl bg-cyan-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-cyan-600 mb-2">
+            {mode === "create" ? "Nueva" : "Editar"}
+          </span>
+          <h3 className="text-xl font-black text-slate-900">
+            {mode === "create" ? "Registrar Guardería" : "Actualizar Datos"}
+          </h3>
+          <p className="mt-1 text-sm font-medium text-slate-500">
+            {mode === "create" 
+              ? "Ingresa los datos del nuevo centro de cuidado infantil." 
+              : "Modifica la información básica o cambia el estado de la guardería."}
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {error && (
+            <div className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-xs font-bold text-rose-600 animate-shake">
+              <AlertCircle size={18} className="shrink-0" />
+              <p>{error}</p>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label htmlFor="daycare-name" className="block text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+              Nombre de la guardería
+            </label>
+            <input
+              id="daycare-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={loading}
+              placeholder="Ej. Guardería Rayito de Sol"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 transition-all"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="daycare-address" className="block text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+              Dirección
+            </label>
+            <textarea
+              id="daycare-address"
+              rows={3}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              disabled={loading}
+              placeholder="Ej. Av. Las Américas, entre 3er y 4to anillo"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 transition-all resize-none animate-none"
+            />
+          </div>
+
+          {mode === "edit" && (
+            <div className="space-y-1.5">
+              <span className="block text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">
+                Estado de la guardería
+              </span>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStatus("ACTIVE")}
+                  disabled={loading}
+                  className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition-all border cursor-pointer ${
+                    status === "ACTIVE"
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10"
+                      : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className={`h-2.5 w-2.5 rounded-full ${status === "ACTIVE" ? "bg-emerald-500 animate-pulse" : "bg-slate-300"}`} />
+                  Activo
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setStatus("INACTIVE")}
+                  disabled={loading}
+                  className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition-all border cursor-pointer ${
+                    status === "INACTIVE"
+                      ? "border-rose-500 bg-rose-50 text-rose-700 shadow-sm shadow-rose-500/10"
+                      : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className={`h-2.5 w-2.5 rounded-full ${status === "INACTIVE" ? "bg-rose-500 animate-pulse" : "bg-slate-300"}`} />
+                  Inactivo
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="px-5 py-3 rounded-2xl border border-slate-200 hover:bg-slate-50 text-xs font-black text-slate-600 transition-all cursor-pointer disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 hover:bg-slate-800 px-6 py-3 text-xs font-black text-white shadow-lg shadow-slate-950/10 transition-all cursor-pointer disabled:opacity-70"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                "Guardar guardería"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
