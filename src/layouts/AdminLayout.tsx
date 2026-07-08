@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   BarChart3,
-  Bell,
   Building2,
   ChevronLeft,
   ChevronRight,
