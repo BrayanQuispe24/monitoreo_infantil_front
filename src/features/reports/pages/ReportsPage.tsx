@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   BarChart3, Download, Search, Loader2, RefreshCw,
-  Building2, User, AlertTriangle, ShieldCheck, ShieldAlert,
-  Compass, Radio, Users, Calendar, HelpCircle,
+  Building2, User, AlertTriangle, ShieldAlert,
+  Radio, Users, Calendar,
   WifiOff
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
@@ -364,8 +364,8 @@ export default function ReportsPage() {
               setSearchQuery("");
             }}
             className={`px-4 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 border ${reportType === tab.id
-                ? "bg-slate-950 text-white border-slate-950 shadow-md shadow-slate-950/10"
-                : "bg-white text-slate-650 hover:bg-slate-50 border-slate-200"
+              ? "bg-slate-950 text-white border-slate-950 shadow-md shadow-slate-950/10"
+              : "bg-white text-slate-650 hover:bg-slate-50 border-slate-200"
               }`}
           >
             {tab.icon}

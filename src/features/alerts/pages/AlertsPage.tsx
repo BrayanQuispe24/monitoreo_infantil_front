@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   AlertTriangle, CheckCircle2, Eye, Search, Loader2, RefreshCw,
-  X, Info, Sparkles, Building2, User, Clock, Check, Calendar, WifiOff
+  X, Sparkles, Building2, User, Check, Calendar, WifiOff
 } from "lucide-react";
 import { AlertService } from "../services/alertService";
 import { DaycareService } from "../../daycares/services/daycareService";
 import { useDaycare } from "../../daycares/hooks/useDaycare";
+import { useAuth } from "../../auth/hooks/useAuth";
 import type { AlertResponse, AlertStatus, AlertType, AlertSeverity } from "../interfaces/Alert.interface";
 
 export default function AlertsPage() {
@@ -23,6 +24,7 @@ export default function AlertsPage() {
   const [selectedAlert, setSelectedAlert] = useState<AlertResponse | null>(null);
 
   const { daycares, changeDaycares } = useDaycare();
+  const { user } = useAuth();
 
   const loadAlerts = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -34,7 +36,11 @@ export default function AlertsPage() {
       }
 
       // 2. Fetch Alerts
-      const data = await AlertService.listAlerts();
+      const queryParams: any = {};
+      if (user && user.role !== "ADMIN" && user.daycare_id) {
+        queryParams.daycare_id = user.daycare_id;
+      }
+      const data = await AlertService.listAlerts(queryParams);
       setAlerts(data);
     } catch (error) {
       console.error("Error al cargar alertas:", error);
@@ -44,9 +50,26 @@ export default function AlertsPage() {
     }
   };
 
+  const loadAlertsRef = useRef(loadAlerts);
   useEffect(() => {
-    loadAlerts();
-  }, []);
+    loadAlertsRef.current = loadAlerts;
+  });
+
+  useEffect(() => {
+    loadAlertsRef.current();
+
+    const interval = setInterval(() => {
+      loadAlertsRef.current(true);
+    }, 5000); // Consulta cada 5 segundos para simular tiempo real (WebSocket)
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
+    if (user && user.role !== "ADMIN" && user.daycare_id) {
+      setDaycareFilter(user.daycare_id);
+    }
+  }, [user]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -282,20 +305,22 @@ export default function AlertsPage() {
             />
           </div>
 
-          <div className="w-full sm:w-64">
-            <select
-              value={daycareFilter}
-              onChange={(e) => setDaycareFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 focus:border-cyan-500 focus:bg-white focus:outline-none transition-all"
-            >
-              <option value="">Todas las guarderías</option>
-              {daycares.map((daycare) => (
-                <option key={daycare.id} value={daycare.id}>
-                  {daycare.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {user?.role === "ADMIN" && (
+            <div className="w-full sm:w-64">
+              <select
+                value={daycareFilter}
+                onChange={(e) => setDaycareFilter(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 focus:border-cyan-500 focus:bg-white focus:outline-none transition-all"
+              >
+                <option value="">Todas las guarderías</option>
+                {daycares.map((daycare) => (
+                  <option key={daycare.id} value={daycare.id}>
+                    {daycare.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { 
-  QrCode, CheckCircle2, Search, Loader2, Trash2, Link, 
+import {
+  QrCode, CheckCircle2, Search, Loader2, Trash2, Link,
   RefreshCw, Clock, Wifi, WifiOff, History, X, AlertCircle, Sparkles
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
@@ -9,8 +9,8 @@ import { DaycareService } from "../../daycares/services/daycareService";
 import { useDaycare } from "../../daycares/hooks/useDaycare";
 import { TrackerService } from "../services/trackerService";
 import type { ChildResponse } from "../../children/interfaces/Child.interface";
-import type { 
-  DeviceDetails, PairingCodeResponse, PairingCodeListResponse 
+import type {
+  DeviceDetails, PairingCodeResponse, PairingCodeListResponse
 } from "../interfaces/Tracker.interface";
 
 interface ChildWithTracker extends ChildResponse {
@@ -49,7 +49,7 @@ export default function TrackersPage() {
     try {
       // 1. Fetch children
       const childrenData = await ChildService.listarNinos();
-      
+
       // 2. Fetch daycares if needed
       if (daycares.length === 0) {
         const daycaresData = await DaycareService.listarGuarderias();
@@ -76,9 +76,9 @@ export default function TrackersPage() {
       });
 
       const trackerResults = await Promise.all(trackerPromises);
-      
+
       // Map results back to state
-      setChildrenWithTrackers(prev => 
+      setChildrenWithTrackers(prev =>
         prev.map(c => {
           const matched = trackerResults.find(r => r.childCode === c.code);
           return {
@@ -158,7 +158,7 @@ export default function TrackersPage() {
     setPairingCode(null);
     setPairingModalOpen(true);
     setTimeLeft(selectedExpiration * 60);
-    
+
     // Auto-generate code when opening
     setPairingLoading(true);
     try {
@@ -211,14 +211,14 @@ export default function TrackersPage() {
 
     try {
       // Mark as loading locally
-      setChildrenWithTrackers(prev => 
+      setChildrenWithTrackers(prev =>
         prev.map(c => c.code === child.code ? { ...c, loadingTracker: true } : c)
       );
 
       await TrackerService.decoupleTracker(child.code);
-      
+
       // Update state to null tracker
-      setChildrenWithTrackers(prev => 
+      setChildrenWithTrackers(prev =>
         prev.map(c => c.code === child.code ? { ...c, tracker: null, loadingTracker: false } : c)
       );
     } catch (error) {
@@ -269,18 +269,18 @@ export default function TrackersPage() {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return "Hace un momento";
     if (diffMins < 60) return `Hace ${diffMins} min`;
-    
+
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `Hace ${diffHours} h`;
-    
-    return date.toLocaleString('es-ES', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      hour: '2-digit', 
-      minute: '2-digit' 
+
+    return date.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -318,7 +318,7 @@ export default function TrackersPage() {
         child.full_name.toLowerCase().includes(query) ||
         child.code.toLowerCase().includes(query) ||
         (child.tracker?.device_code && child.tracker.device_code.toLowerCase().includes(query));
-        
+
       const matchesDaycare = daycareFilter === "" || child.daycare_id === daycareFilter;
 
       return matchesSearch && matchesDaycare;
@@ -442,7 +442,7 @@ export default function TrackersPage() {
                 <th className="px-6 py-4">Niño / Código</th>
                 <th className="px-6 py-4">Guardería</th>
                 <th className="px-6 py-4">Rastreador</th>
-                <th className="px-6 py-4">Última Conexión</th>
+                {/* <th className="px-6 py-4">Última Conexión</th> */}
                 <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
             </thead>
@@ -485,7 +485,7 @@ export default function TrackersPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-500 font-semibold">
+                    {/* <td className="px-6 py-4 text-slate-500 font-semibold">
                       {child.loadingTracker ? (
                         <span className="text-slate-300">-</span>
                       ) : child.tracker && child.tracker.is_active ? (
@@ -505,7 +505,7 @@ export default function TrackersPage() {
                       ) : (
                         <span className="text-slate-300">N/A</span>
                       )}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {child.tracker && child.tracker.is_active ? (
@@ -550,7 +550,7 @@ export default function TrackersPage() {
       {pairingModalOpen && selectedChild && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-[2.5rem] border border-slate-100 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            
+
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -562,7 +562,7 @@ export default function TrackersPage() {
                   <p className="text-xs font-semibold text-slate-400">Niño: {selectedChild.full_name}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={handleCancelPairing}
                 className="h-8 w-8 inline-flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
               >
@@ -597,9 +597,9 @@ export default function TrackersPage() {
                 <div className="space-y-5">
                   {/* QR Image Frame */}
                   <div className="relative bg-slate-50/50 p-4 rounded-3xl border border-slate-100 inline-block">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pairingCode.qr_payload)}`} 
-                      alt="Código QR de emparejamiento" 
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pairingCode.qr_payload)}`}
+                      alt="Código QR de emparejamiento"
                       className="w-48 h-48 mx-auto border border-slate-200 rounded-2xl bg-white shadow-sm"
                     />
                     {timeLeft <= 0 && (
@@ -637,11 +637,10 @@ export default function TrackersPage() {
                             key={mins}
                             onClick={() => handleExpirationChange(mins)}
                             disabled={timeLeft <= 0}
-                            className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                              selectedExpiration === mins
-                                ? "bg-slate-950 text-white"
-                                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-                            }`}
+                            className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${selectedExpiration === mins
+                              ? "bg-slate-950 text-white"
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                              }`}
                           >
                             {mins}m
                           </button>
@@ -687,7 +686,7 @@ export default function TrackersPage() {
       {historyModalOpen && selectedChild && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs">
           <div className="w-full max-w-lg rounded-[2.5rem] border border-slate-100 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            
+
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -699,7 +698,7 @@ export default function TrackersPage() {
                   <p className="text-xs font-semibold text-slate-400">Niño: {selectedChild.full_name}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setHistoryModalOpen(false)}
                 className="h-8 w-8 inline-flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
               >

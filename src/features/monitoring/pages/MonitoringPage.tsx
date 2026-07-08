@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { 
   MonitorDot, Search, Loader2, RefreshCw, 
   MapPin, ShieldAlert, ShieldCheck, 
-  Wifi, WifiOff, AlertTriangle, AlertCircle, Sparkles, Compass, X
+  Wifi, WifiOff, AlertTriangle, AlertCircle, Sparkles, X
 } from "lucide-react";
 import { ChildService } from "../../children/services/childService";
 import { DaycareService } from "../../daycares/services/daycareService";
