@@ -1,0 +1,9 @@
+services:
+  monitoreo-front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: monitoreo_infantil_front
+    ports:
+      - "8080:80"
+    restart: unless-stopped

@@ -263,26 +263,7 @@ export default function TrackersPage() {
     return daycare ? daycare.name : "Sin asignar";
   };
 
-  const formatLastSeen = (dateString: string | null) => {
-    if (!dateString) return "Nunca conectado";
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
 
-    if (diffMins < 1) return "Hace un momento";
-    if (diffMins < 60) return `Hace ${diffMins} min`;
-
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `Hace ${diffHours} h`;
-
-    return date.toLocaleString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const formatTimeLeft = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
