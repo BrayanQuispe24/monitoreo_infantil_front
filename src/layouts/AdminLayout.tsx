@@ -339,7 +339,7 @@ export default function AdminLayout() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
+              {/* <button
                 type="button"
                 className="relative rounded-2xl border border-slate-200 bg-white p-2.5 text-slate-700 shadow-sm hover:bg-slate-50"
                 aria-label="Notificaciones"
@@ -348,7 +348,7 @@ export default function AdminLayout() {
                 <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white">
                   4
                 </span>
-              </button>
+              </button> */}
 
               <div className="hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm sm:flex">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
